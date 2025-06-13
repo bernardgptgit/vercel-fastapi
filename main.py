@@ -33,3 +33,18 @@ async def root():
 @app.get('/ping')
 async def hello():
     return {'res': 'pong', 'version': __version__, "time": time()}
+
+@app.get("/api/ip_info")
+async def ip_info(request: Request):
+    client_ip = request.headers.get("X-Forwarded-For", request.client.host).split(",")[0].strip()
+    try:
+        response = requests.get(f"http://ip-api.com/json/{client_ip}")
+        data = response.json()
+        return {
+            "ip": client_ip,
+            "country": data.get("country", "Unknown"),
+            "city": data.get("city", "Unknown"),
+            "isp": data.get("isp", "Unknown")
+        }
+    except Exception as e:
+        return {"error": str(e)}
