@@ -64,7 +64,7 @@ async def get_ticker():
                 detail="Service temporarily unavailable"
             )
 
-        symbol = "BTCUSDTM"  
+        symbol = "BTC/USDT"  
         logger.info(f"Fetching ticker for symbol: {symbol}")
 
         try:
