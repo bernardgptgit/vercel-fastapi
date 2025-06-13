@@ -1,51 +1,45 @@
-from time import time
-from fastapi import FastAPI,Request, __version__
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
-import requests
+from fastapi import FastAPI, Query
+from kucoin_client import KucoinFuturesClient
 
 app = FastAPI()
-app.mount("/static", StaticFiles(directory="static"), name="static")
+client = KucoinFuturesClient()
 
-html = f"""
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>FastAPI on amin</title>
-        <link rel="icon" href="/static/favicon.ico" type="image/x-icon" />
-    </head>
-    <body>
-        <div class="bg-gray-200 p-4 rounded-lg shadow-lg">
-            <h1>Hello AMIN from FastAPI@{__version__}</h1>
-            <ul>
-                <li><a href="/docs">/docs</a></li>
-                <li><a href="/redoc">/redoc</a></li>
-            </ul>
-            <p>Powered by <a href="https://vercel.com" target="_blank">Vercel</a></p>
-        </div>
-    </body>
-</html>
-"""
+@app.on_event("startup")
+async def startup():
+    await client.init()
 
-@app.get("/")
-async def root():
-    return HTMLResponse(html)
+@app.on_event("shutdown")
+async def shutdown():
+    await client.close()
 
-@app.get('/ping')
-async def hello():
-    return {'res': 'pong', 'version': __version__, "time": time()}
+@app.get("/balance")
+async def get_balance():
+    return await client.fetch_balance()
 
-@app.get("/api/ip_info")
-async def ip_info(request: Request):
-    client_ip = request.headers.get("X-Forwarded-For", request.client.host).split(",")[0].strip()
-    try:
-        response = requests.get(f"http://ip-api.com/json/{client_ip}")
-        data = response.json()
-        return {
-            "ip": client_ip,
-            "country": data.get("country", "Unknown"),
-            "city": data.get("city", "Unknown"),
-            "isp": data.get("isp", "Unknown")
-        }
-    except Exception as e:
-        return {"error": str(e)}
+@app.get("/ticker")
+async def get_ticker(symbol: str = Query(..., example="BTC/USDT:USDT")):
+    return await client.fetch_ticker(symbol)
+
+@app.get("/position")
+async def get_position(symbol: str = Query(...)):
+    return await client.fetch_position(symbol)
+
+@app.get("/order")
+async def get_order(order_id: str, symbol: str = Query(None)):
+    return await client.fetch_order(order_id, symbol)
+
+@app.get("/open-orders")
+async def open_orders(symbol: str = Query(None)):
+    return await client.fetch_open_orders(symbol)
+
+@app.post("/create-order")
+async def create_order(
+    symbol: str,
+    side: str,
+    cost: float,
+    tp: float,
+    sl: float,
+    leverage: int,
+    tags: str
+):
+    return await client.create_future_market_order(symbol, side, cost, tp, sl, leverage, tags)
