@@ -1,8 +1,23 @@
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, HTTPException
 from kucoin_client import KucoinFuturesClient
+import logging
+from fastapi.responses import JSONResponse
 
 app = FastAPI()
 client = KucoinFuturesClient()
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("ticker_api.log"),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
+
 
 @app.on_event("startup")
 async def startup():
@@ -15,18 +30,6 @@ async def shutdown():
 @app.get("/balance")
 async def get_balance():
     return await client.fetch_balance()
-
-@app.get("/ticker")
-async def get_ticker():
-    await client.init()
-
-    symbol = "BTCUSDTM"  
-    ticker = await client.fetch_ticker(symbol)
-    print("📊 Ticker:", ticker)
-
-    await client.close()
-
-    return ticker
 
 @app.get("/position")
 async def get_position(symbol: str = Query(...)):
@@ -51,3 +54,34 @@ async def create_order(
     tags: str
 ):
     return await client.create_future_market_order(symbol, side, cost, tp, sl, leverage, tags)
+
+
+@app.get("/ticker")
+async def get_ticker():
+    try:
+        # Initialize client
+        logger.info("Initializing client connection")
+        await client.init()
+        
+        symbol = "BTCUSDTM"
+        logger.info(f"Fetching ticker for symbol: {symbol}")
+        
+        try:
+            ticker = await client.fetch_ticker(symbol)
+            logger.info(f"Successfully fetched ticker data: {ticker}")
+        except Exception as fetch_error:
+            logger.error(f"Failed to fetch ticker: {str(fetch_error)}", exc_info=True)
+            raise HTTPException(status_code=400, detail="Ticker fetch failed")
+        
+        return JSONResponse(content=ticker)
+        
+    except Exception as e:
+        logger.error(f"Unexpected error in ticker endpoint: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
+        
+    finally:
+        try:
+            logger.info("Closing client connection")
+            await client.close()
+        except Exception as close_error:
+            logger.error(f"Error while closing client: {str(close_error)}", exc_info=True)
