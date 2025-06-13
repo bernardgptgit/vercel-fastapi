@@ -6,17 +6,12 @@ from fastapi.responses import JSONResponse
 app = FastAPI()
 client = KucoinFuturesClient()
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler("ticker_api.log"),
-        logging.StreamHandler()
-    ]
+    handlers=[logging.StreamHandler()]  # Only console logging
 )
 logger = logging.getLogger(__name__)
-
 
 
 @app.on_event("startup")
@@ -55,7 +50,6 @@ async def create_order(
 ):
     return await client.create_future_market_order(symbol, side, cost, tp, sl, leverage, tags)
 
-
 @app.get("/ticker")
 async def get_ticker():
     try:
@@ -68,12 +62,12 @@ async def get_ticker():
         
         try:
             ticker = await client.fetch_ticker(symbol)
-            logger.info(f"Successfully fetched ticker data: {ticker}")
+            logger.info("Successfully fetched ticker data")
+            return JSONResponse(content=ticker)
+            
         except Exception as fetch_error:
             logger.error(f"Failed to fetch ticker: {str(fetch_error)}", exc_info=True)
             raise HTTPException(status_code=400, detail="Ticker fetch failed")
-        
-        return JSONResponse(content=ticker)
         
     except Exception as e:
         logger.error(f"Unexpected error in ticker endpoint: {str(e)}", exc_info=True)
