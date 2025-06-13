@@ -1,7 +1,8 @@
 from time import time
-from fastapi import FastAPI, __version__
+from fastapi import FastAPI,Request, __version__
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
+import requests
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
