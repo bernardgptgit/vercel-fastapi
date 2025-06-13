@@ -18,7 +18,7 @@ async def get_balance():
 
 @app.get("/ticker")
 async def get_ticker(symbol: str = Query(..., example="BTC/USDT:USDT")):
-    return await client.fetch_ticker('BTCUSDTM')
+    return await client.fetch_ticker(symbol)
 
 @app.get("/position")
 async def get_position(symbol: str = Query(...)):
