@@ -15,7 +15,7 @@ html = f"""
     </head>
     <body>
         <div class="bg-gray-200 p-4 rounded-lg shadow-lg">
-            <h1>Hello from FastAPI@{__version__}</h1>
+            <h1>Hello AMIN from FastAPI@{__version__}</h1>
             <ul>
                 <li><a href="/docs">/docs</a></li>
                 <li><a href="/redoc">/redoc</a></li>
