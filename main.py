@@ -6,13 +6,13 @@ from fastapi.responses import JSONResponse
 app = FastAPI()
 client = KucoinFuturesClient()
 
+# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[logging.StreamHandler()]  # Only console logging
+    handlers=[logging.StreamHandler()]
 )
 logger = logging.getLogger(__name__)
-
 
 @app.on_event("startup")
 async def startup():
@@ -53,29 +53,44 @@ async def create_order(
 @app.get("/ticker")
 async def get_ticker():
     try:
-        # Initialize client
+        # Initialize client with timeout
         logger.info("Initializing client connection")
-        await client.init()
-        
-        symbol = "BTCUSDTM"
+        try:
+            await client.init()
+        except Exception as init_error:
+            logger.error(f"Client initialization failed: {str(init_error)}", exc_info=True)
+            raise HTTPException(
+                status_code=503,
+                detail="Service temporarily unavailable"
+            )
+
+        symbol = "BTCUSDTM"  
         logger.info(f"Fetching ticker for symbol: {symbol}")
-        
+
         try:
             ticker = await client.fetch_ticker(symbol)
-            logger.info("Successfully fetched ticker data")
+            logger.info(f"Ticker data retrieved successfully")
             return JSONResponse(content=ticker)
-            
         except Exception as fetch_error:
-            logger.error(f"Failed to fetch ticker: {str(fetch_error)}", exc_info=True)
-            raise HTTPException(status_code=400, detail="Ticker fetch failed")
-        
+            logger.error(f"Ticker fetch failed for {symbol}: {str(fetch_error)}", exc_info=True)
+            raise HTTPException(
+                status_code=400,
+                detail=f"Could not retrieve ticker data for {symbol}"
+            )
+
+    except HTTPException:
+        # Re-raise already handled HTTP exceptions
+        raise
     except Exception as e:
-        logger.error(f"Unexpected error in ticker endpoint: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error")
-        
+        logger.critical(f"Unexpected error: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error"
+        )
     finally:
         try:
-            logger.info("Closing client connection")
-            await client.close()
+            if 'client' in locals() and hasattr(client, 'close'):
+                logger.info("Closing client connection")
+                await client.close()
         except Exception as close_error:
-            logger.error(f"Error while closing client: {str(close_error)}", exc_info=True)
+            logger.error(f"Error closing client: {str(close_error)}", exc_info=True)
