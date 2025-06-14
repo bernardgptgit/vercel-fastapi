@@ -51,7 +51,7 @@ async def create_order(
     return await client.create_future_market_order(symbol, side, cost, tp, sl, leverage, tags)
 
 @app.get("/ticker")
-async def get_ticker():
+async def get_ticker(symbol: str = Query(...)):
     try:
         # Initialize client with timeout
         logger.info("Initializing client connection")
@@ -64,7 +64,6 @@ async def get_ticker():
                 detail="Service temporarily unavailable"
             )
 
-        symbol = "BTC/USDT:USDT"  
         logger.info(f"Fetching ticker for symbol: {symbol}")
 
         try:
