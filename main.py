@@ -22,9 +22,6 @@ async def startup():
 async def shutdown():
     await client.close()
 
-@app.get("/balance")
-async def get_balance():
-    return await client.fetch_balance()
 
 @app.get("/position")
 async def get_position(symbol: str = Query(...)):
@@ -75,6 +72,50 @@ async def get_ticker(symbol: str = Query(...)):
             raise HTTPException(
                 status_code=400,
                 detail=f"Could not retrieve ticker data for {symbol}"
+            )
+
+    except HTTPException:
+        # Re-raise already handled HTTP exceptions
+        raise
+    except Exception as e:
+        logger.critical(f"Unexpected error: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error"
+        )
+    finally:
+        try:
+            if 'client' in locals() and hasattr(client, 'close'):
+                logger.info("Closing client connection")
+                await client.close()
+        except Exception as close_error:
+            logger.error(f"Error closing client: {str(close_error)}", exc_info=True)
+
+@app.get("/balance")
+async def get_balance():
+    try:
+        # Initialize client with timeout
+        logger.info("Initializing client connection")
+        try:
+            await client.init()
+        except Exception as init_error:
+            logger.error(f"Client initialization failed: {str(init_error)}", exc_info=True)
+            raise HTTPException(
+                status_code=503,
+                detail="Service temporarily unavailable"
+            )
+
+        logger.info(f"Fetching balance")
+
+        try:
+            ticker = await client.fetch_balance()
+            logger.info(f"balance data retrieved successfully")
+            return JSONResponse(content=ticker)
+        except Exception as fetch_error:
+            logger.error(f"balance fetch failed for : {str(fetch_error)}", exc_info=True)
+            raise HTTPException(
+                status_code=400,
+                detail=f"Could not retrieve balance data "
             )
 
     except HTTPException:
