@@ -13,7 +13,7 @@ API_SECRET_KUCOIN = 'f7d03c97-f890-4771-a4c3-71c17e215e18'
 API_PASS_KUCOIN = 'Ammy*5533@sa'
 
 
-kucoin_futures = ccxt.kucoinfutures({
+exchange = ccxt.kucoinfutures({
         'apiKey': API_KEY_KUCOIN,
         'secret': API_SECRET_KUCOIN,
         'password': API_PASS_KUCOIN,
@@ -50,7 +50,7 @@ def fetch_open_orders_details():
 @app.get("/fetch_order_details")
 def fetch_order(orderID: str, symbol: str):
     try:
-        return kucoin_futures.fetch_order(orderID, symbol)
+        return exchange.fetch_order(orderID, symbol)
     except Exception as e:
         print(f"Failed to fetch order {orderID}: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
@@ -60,7 +60,7 @@ def fetch_order(orderID: str, symbol: str):
 def fetch_positions_for_symbol(order_status: OrderStatusRequest):
 
     try:
-        return kucoin_futures.fetch_positions_for_symbol(order_status.symbol)
+        return exchange.fetch_positions_for_symbol(order_status.symbol)
     except Exception as e:
         print("Failed to fetch order %s: %s", str(e))
         raise
@@ -93,7 +93,7 @@ async def fetch_orders_by_status(
             params['limit'] = limit
 
         # Standard CCXT method (adjust if KuCoin uses a custom endpoint)
-        orders = kucoin_futures.fetch_orders(symbol=symbol, since=since, limit=limit, params=params)
+        orders = exchange.fetch_orders(symbol=symbol, since=since, limit=limit, params=params)
 
         # Filter by status if not already done by the exchange
         filtered_orders = [order for order in orders if order['status'] == status]
@@ -123,7 +123,7 @@ def create_market_futures_order(order_request: OrderRequest):
             takeProfitPrice = round(entry_price * (1 + order_request.tp / 100), 4)
             stopLossPrice = round(entry_price * (1 - order_request.sl / 100), 4)
 
-        return kucoin_futures.create_order_with_take_profit_and_stop_loss(
+        return exchange.create_order_with_take_profit_and_stop_loss(
                 symbol=order_request.symbol,
                 type='market',
                 side=order_request.side,
@@ -161,7 +161,7 @@ def create_limit_futures_order(order_request: OrderRequest):
             takeProfitPrice = round(entry_price * (1 + order_request.sl / 100), 4)
             stopLossPrice = round(entry_price * (1 - order_request.tp / 100), 4)
 
-        return kucoin_futures.create_order_with_take_profit_and_stop_loss(
+        return exchange.create_order_with_take_profit_and_stop_loss(
                 symbol=order_request.symbol,
                 type='limit',
                 side=order_request.side,
