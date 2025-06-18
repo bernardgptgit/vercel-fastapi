@@ -205,15 +205,15 @@ def fetch_ticker(symbol):
     print("❌ Error fetching ticker:", e)
     return None
        
-@app.get("/balance") 
-def fetch_balance():
-  print("⏳ Fetching balance from KuCoin Futures...")
-  try:
-    balance = exchange.fetchBalance()
-    print("✅ Balance fetched successfully.")
-    return balance
-  except Exception as e:
-    print("❌ Error fetching balance:", e)
-    return None
 
+@app.get("/balance")
+def fetch_balance():
+    print("⏳ Fetching balance from KuCoin Futures...")
+    try:
+        balance = exchange.fetch_balance()
+        print("✅ Balance fetched successfully.")
+        return balance
+    except Exception as e:
+        print("❌ Error fetching balance:", e)
+        return {"error": str(e)}
 
