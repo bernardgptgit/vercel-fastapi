@@ -209,7 +209,7 @@ def fetch_ticker(symbol):
 def fetch_balance():
   print("⏳ Fetching balance from KuCoin Futures...")
   try:
-    balance = exchange.fetch_balance()
+    balance = exchange.fetchBalance()
     print("✅ Balance fetched successfully.")
     return balance
   except Exception as e:
