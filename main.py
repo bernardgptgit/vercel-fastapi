@@ -36,7 +36,7 @@ class OrderStatusRequest(BaseModel):
     symbol: str = None
     orderID: str = None
 
-
+@app.get("/ticker")
 def fetch_ticker(symbol: str, params: dict):
 
     try:
