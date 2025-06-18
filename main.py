@@ -36,26 +36,6 @@ class OrderStatusRequest(BaseModel):
     symbol: str = None
     orderID: str = None
 
-@app.get("/ticker")
-def fetch_ticker(symbol: str, params: dict):
-
-    try:
-
-        ticker = kucoin_futures.fetch_ticker(
-            symbol=symbol,
-            params=params or {}
-        )
-        ticker['bid'] = float(ticker['bid']) if ticker['bid'] is not None else None
-        ticker['ask'] = float(ticker['ask']) if ticker['ask'] is not None else None
-        ticker['last'] = float(ticker['last']) if ticker['last'] is not None else None
-
-        return ticker
-
-
-    except ccxt.BaseError as e:
-        print(f"Failed to create order ")
-
-        raise
 
 @app.post("/fetch_open_orders_details")
 def fetch_open_orders_details():
@@ -211,13 +191,19 @@ def webhook(signal: str):
 async def health_check():
     return {"status": "API is running"}
 
-exchange = ccxt.kucoinfutures({
-  "apiKey": "67c1cc1545e41a000166e9bc",
-  "secret": "f7d03c97-f890-4771-a4c3-71c17e215e18",
-  "password": "Ammy*5533@sa",
-  "enableRateLimit": True,
-  "timeout": 30000   
-})
+@app.get("/ticker")
+def fetch_ticker(symbol):
+  print("⏳ Fetching ticker from KuCoin Futures...")
+  try:
+    ticker = exchange.fetch_ticker(symbol)
+    ticker['bid'] = float(ticker['bid']) if ticker['bid'] is not None else None
+    ticker['ask'] = float(ticker['ask']) if ticker['ask'] is not None else None
+    ticker['last'] = float(ticker['last']) if ticker['last'] is not None else None
+    
+    return ticker
+  except Exception as e:
+    print("❌ Error fetching ticker:", e)
+    return None
        
 @app.get("/balance") 
 def fetch_balance():
